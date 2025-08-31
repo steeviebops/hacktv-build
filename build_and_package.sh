@@ -2,7 +2,7 @@
 set -e
 
 REPO_DIR=$1
-OUTPUT_DIR="$1/src/$2"
+OUTPUT_DIR=$2
 mkdir -p "$OUTPUT_DIR"
 
 if [[ -z "$REPO_DIR" || -z "$OUTPUT_DIR" ]]; then
@@ -40,12 +40,9 @@ else
 fi
 
 # Debugging
-echo $PWD
-ls -A
-ls -A "$OUTPUT_DIR/"
+echo $OUTPUT_DIR
 
 # Copy files
-pushd "$OUTPUT_DIR"
 cp hacktv.exe "$OUTPUT_DIR/"
 cp readme.txt "$OUTPUT_DIR/"
 if [[ -d ../testsignals ]]; then
@@ -54,6 +51,7 @@ if [[ -d ../testsignals ]]; then
 fi
 
 # Zip
+pushd "$OUTPUT_DIR"
 zip -r "$ZIPNAME" *
 popd
 
