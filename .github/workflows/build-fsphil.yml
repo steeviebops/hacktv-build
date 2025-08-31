@@ -9,6 +9,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout automation repo
+        uses: actions/checkout@v4
+        
       - name: Restore last built commit SHA
         id: cache-sha
         uses: actions/cache@v3
