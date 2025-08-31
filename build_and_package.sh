@@ -28,7 +28,7 @@ fi
 # Generate metadata
 DESC=$(git show HEAD --pretty=format:"%s" --no-patch)
 CID=$(git show HEAD --pretty=format:"%h" --no-patch)
-echo "$CID ($DESC)" > "$OUTPUT_DIR/readme.txt"
+echo "$CID ($DESC)" > ./readme.txt
 
 # Determine zip name
 if [[ -f ./resources.h ]]; then
