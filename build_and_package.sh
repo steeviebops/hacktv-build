@@ -54,9 +54,3 @@ if [[ -d ../testsignals ]]; then
     cp ../testsignals/*.bin "$OUTPUT_DIR/testsignals"
 fi
 
-# Zip
-pushd "$OUTPUT_DIR"
-zip -r "$ZIPNAME" *
-popd
-
-echo "Artifact ready: $ZIPNAME"
