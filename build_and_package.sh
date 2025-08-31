@@ -3,6 +3,7 @@ set -e
 
 REPO_DIR=$1
 OUTPUT_DIR=$2
+rm -f $OUTPUT_DIR
 mkdir -p $OUTPUT_DIR
 
 if [[ -z "$REPO_DIR" || -z "$OUTPUT_DIR" ]]; then
