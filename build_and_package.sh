@@ -3,7 +3,7 @@ set -e
 
 REPO_DIR=$1
 OUTPUT_DIR=$2
-mkdir -p "$OUTPUT_DIR"
+mkdir -p $OUTPUT_DIR
 
 if [[ -z "$REPO_DIR" || -z "$OUTPUT_DIR" ]]; then
     echo "Usage: $0 <repo_dir> <output_dir>"
@@ -43,8 +43,8 @@ fi
 echo $OUTPUT_DIR
 
 # Copy files
-cp hacktv.exe "$OUTPUT_DIR/"
-cp readme.txt "$OUTPUT_DIR/"
+cp hacktv.exe $OUTPUT_DIR
+cp readme.txt $OUTPUT_DIR
 if [[ -d ../testsignals ]]; then
     mkdir -p "$OUTPUT_DIR/testsignals"
     cp ../testsignals/*.bin "$OUTPUT_DIR/testsignals"
