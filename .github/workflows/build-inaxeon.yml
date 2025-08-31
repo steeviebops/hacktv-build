@@ -1,0 +1,27 @@
+name: Build inaxeon HackTV (GitHub)
+
+on:
+  push:
+    branches: [ master, main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y zip gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 mingw-w64-tools git make libtool cmake yasm nasm patch dpkg-dev
+
+      - name: Clone GitHub repo
+        run: git clone https://github.com/inaxeon/hacktv.git
+
+      - name: Build & package
+        run: ./build_and_package.sh hacktv dist
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: hacktv-inaxeon
+          path: dist/*.zip
