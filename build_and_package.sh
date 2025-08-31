@@ -39,6 +39,11 @@ else
     ZIPNAME=fsphil.zip
 fi
 
+# Debugging
+echo $PWD
+ls -A
+ls -A "$OUTPUT_DIR/"
+
 # Copy files
 cp hacktv.exe "$OUTPUT_DIR/"
 cp readme.txt "$OUTPUT_DIR/"
