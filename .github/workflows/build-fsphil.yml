@@ -66,8 +66,8 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: hacktv-fsphil
-          path: hacktv/src/dist/*.zip
+          name: fsphil
+          path: hacktv/src/dist/**
 
       - name: Save latest commit SHA
         if: success()
