@@ -45,15 +45,15 @@ ls -A
 ls -A "$OUTPUT_DIR/"
 
 # Copy files
+pushd "$OUTPUT_DIR"
 cp hacktv.exe "$OUTPUT_DIR/"
 cp readme.txt "$OUTPUT_DIR/"
 if [[ -d ../testsignals ]]; then
-    mkdir "$OUTPUT_DIR/testsignals"
+    mkdir -p "$OUTPUT_DIR/testsignals"
     cp ../testsignals/*.bin "$OUTPUT_DIR/testsignals"
 fi
 
 # Zip
-pushd "$OUTPUT_DIR"
 zip -r "$ZIPNAME" *
 popd
 
