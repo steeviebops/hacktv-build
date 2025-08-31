@@ -2,7 +2,8 @@
 set -e
 
 REPO_DIR=$1
-OUTPUT_DIR=$2
+OUTPUT_DIR="$1/src/$2"
+mkdir -p "$OUTPUT_DIR"
 
 if [[ -z "$REPO_DIR" || -z "$OUTPUT_DIR" ]]; then
     echo "Usage: $0 <repo_dir> <output_dir>"
@@ -23,8 +24,6 @@ if [[ ! -f ./hacktv.exe ]]; then
     echo "Build failed!"
     exit 1
 fi
-
-mkdir -p "$OUTPUT_DIR"
 
 # Generate metadata
 DESC=$(git show HEAD --pretty=format:"%s" --no-patch)
