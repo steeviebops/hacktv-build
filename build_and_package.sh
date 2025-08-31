@@ -41,6 +41,7 @@ fi
 
 # Copy files
 cp hacktv.exe "$OUTPUT_DIR/"
+cp readme.txt "$OUTPUT_DIR/"
 if [[ -d ../testsignals ]]; then
     mkdir "$OUTPUT_DIR/testsignals"
     cp ../testsignals/*.bin "$OUTPUT_DIR/testsignals"
