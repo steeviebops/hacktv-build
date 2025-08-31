@@ -49,7 +49,7 @@ fi
 
 # Zip
 pushd "$OUTPUT_DIR"
-zip -r "../$ZIPNAME" *
+zip -r "$ZIPNAME" *
 popd
 
 echo "Artifact ready: $ZIPNAME"
