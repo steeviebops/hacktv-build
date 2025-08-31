@@ -2,7 +2,7 @@ name: Build fsphil HackTV (Codeberg)
 
 on:
   schedule:
-    - cron: "0 */6 * * *"   # every 6 hours
+    - cron: "0 */2 * * *"   # every 2 hours
   workflow_dispatch:
 
 jobs:
@@ -11,7 +11,7 @@ jobs:
     steps:
       - name: Checkout automation repo
         uses: actions/checkout@v4
-        
+
       - name: Restore last built commit SHA
         id: cache-sha
         uses: actions/cache@v3
@@ -19,10 +19,19 @@ jobs:
           path: .last_built_sha
           key: hacktv-fsphil-sha
 
+      - name: Cache APT packages
+        uses: actions/cache@v3
+        with:
+          path: /var/cache/apt/archives
+          key: apt-${{ runner.os }}
+          restore-keys: |
+            apt-${{ runner.os }}
+
       - name: Install build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y mingw-w64 zip gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 mingw-w64-tools git make libtool cmake yasm nasm patch dpkg-dev
+          sudo apt-get install -y mingw-w64 zip gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 \
+            mingw-w64-tools git make libtool cmake yasm nasm patch dpkg-dev
 
       - name: Clone Codeberg repo
         run: git clone https://codeberg.org/fsphil/hacktv.git
@@ -32,6 +41,14 @@ jobs:
         run: |
           CID=$(git -C hacktv rev-parse HEAD)
           echo "cid=$CID" >> $GITHUB_OUTPUT
+
+      - name: Cache hacktv build
+        uses: actions/cache@v3
+        with:
+          path: hacktv/build
+          key: hacktv-build-${{ steps.get-sha.outputs.cid }}
+          restore-keys: |
+            hacktv-build-
 
       - name: Check if build is needed
         id: check
@@ -55,3 +72,10 @@ jobs:
       - name: Save latest commit SHA
         if: success()
         run: echo "${{ steps.get-sha.outputs.cid }}" > .last_built_sha
+
+      - name: Cache latest commit SHA
+        if: success()
+        uses: actions/cache@v3
+        with:
+          path: .last_built_sha
+          key: hacktv-fsphil-sha
