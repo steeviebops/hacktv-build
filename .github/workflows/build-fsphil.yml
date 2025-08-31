@@ -60,7 +60,7 @@ jobs:
 
       - name: Build & package
         if: success()   # only runs if not skipped
-        run: ./build_and_package.sh hacktv dist
+        run: ./build_and_package.sh hacktv hacktv/src/dist
 
       - name: Upload artifact
         if: success()
