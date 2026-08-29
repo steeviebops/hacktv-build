@@ -1,4 +1,4 @@
-name: Build fsphil HackTV (Codeberg)
+name: Build hacktv (Codeberg)
 
 on:
   schedule:
@@ -10,17 +10,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout automation repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Restore last built commit SHA
         id: cache-sha
-        uses: actions/cache@v3
+        uses: actions/cache@v6
         with:
           path: .last_built_sha
           key: hacktv-fsphil-sha
 
       - name: Cache APT packages
-        uses: actions/cache@v3
+        uses: actions/cache@v6
         with:
           path: /var/cache/apt/archives
           key: apt-${{ runner.os }}
@@ -42,40 +42,34 @@ jobs:
           CID=$(git -C hacktv rev-parse HEAD)
           echo "cid=$CID" >> $GITHUB_OUTPUT
 
-      - name: Cache hacktv build
-        uses: actions/cache@v3
-        with:
-          path: hacktv/build
-          key: hacktv-build-${{ steps.get-sha.outputs.cid }}
-          restore-keys: |
-            hacktv-build-
-
       - name: Check if build is needed
         id: check
         run: |
           if [ -f .last_built_sha ] && [ "$(cat .last_built_sha)" = "${{ steps.get-sha.outputs.cid }}" ]; then
-            echo "No new commit — skipping build."
-            exit 0
+              echo "No new commit — skipping build."
+              echo "needed=false" >> "$GITHUB_OUTPUT"
+          else
+              echo "needed=true" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Build & package
-        if: success()   # only runs if not skipped
+        if: steps.check.outputs.needed == 'true'
         run: ./build_and_package.sh hacktv hacktv/src/dist
 
       - name: Upload artifact
-        if: success()
-        uses: actions/upload-artifact@v4
+        if: steps.check.outputs.needed == 'true'
+        uses: actions/upload-artifact@v7
         with:
           name: fsphil
           path: hacktv/src/dist/**
 
       - name: Save latest commit SHA
-        if: success()
+        if: steps.check.outputs.needed == 'true'
         run: echo "${{ steps.get-sha.outputs.cid }}" > .last_built_sha
 
       - name: Cache latest commit SHA
-        if: success()
-        uses: actions/cache@v3
+        if: steps.check.outputs.needed == 'true'
+        uses: actions/cache@v6
         with:
           path: .last_built_sha
           key: hacktv-fsphil-sha
