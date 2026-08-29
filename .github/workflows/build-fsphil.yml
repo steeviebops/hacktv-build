@@ -51,14 +51,6 @@ jobs:
       - name: Checkout automation repo
         uses: actions/checkout@v5
 
-      - name: Cache APT packages
-        uses: actions/cache@v6
-        with:
-          path: /var/cache/apt/archives
-          key: apt-${{ runner.os }}
-          restore-keys: |
-            apt-${{ runner.os }}
-
       - name: Install build dependencies
         run: |
           sudo apt-get update
@@ -85,14 +77,6 @@ jobs:
     steps:
       - name: Checkout automation repo
         uses: actions/checkout@v5
-
-      - name: Cache APT packages
-        uses: actions/cache@v6
-        with:
-          path: /var/cache/apt/archives
-          key: apt-${{ runner.os }}
-          restore-keys: |
-            apt-${{ runner.os }}
 
       - name: Install build dependencies
         run: |
