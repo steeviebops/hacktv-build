@@ -2,22 +2,97 @@ name: Build hacktv (Codeberg)
 
 on:
   schedule:
-    - cron: "0 */2 * * *"   # every 2 hours
+    - cron: "0 */2 * * *"
   workflow_dispatch:
 
 jobs:
-  build:
+  check:
     runs-on: ubuntu-latest
+    outputs:
+      needed: ${{ steps.check.outputs.needed }}
+      sha: ${{ steps.get-sha.outputs.cid }}
+
     steps:
       - name: Checkout automation repo
         uses: actions/checkout@v5
 
       - name: Restore last built commit SHA
-        id: cache-sha
-        uses: actions/cache@v6
+        uses: actions/cache/restore@v6
         with:
           path: .last_built_sha
           key: hacktv-fsphil-sha
+
+      - name: Clone Codeberg repo
+        run: git clone https://codeberg.org/fsphil/hacktv.git
+
+      - name: Get latest commit SHA
+        id: get-sha
+        run: |
+          CID=$(git -C hacktv rev-parse HEAD)
+          echo "cid=$CID" >> "$GITHUB_OUTPUT"
+
+      - name: Check if build is needed
+        id: check
+        run: |
+          if [ -f .last_built_sha ] && [ "$(cat .last_built_sha)" = "${{ steps.get-sha.outputs.cid }}" ]; then
+            echo "No new commit — skipping build."
+            echo "needed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "New commit detected."
+            echo "needed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  x64:
+    needs: check
+    if: needs.check.outputs.needed == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout automation repo
+        uses: actions/checkout@v5
+
+      - name: Cache APT packages
+        uses: actions/cache@v6
+        with:
+          path: /var/cache/apt/archives
+          key: apt-${{ runner.os }}
+          restore-keys: |
+            apt-${{ runner.os }}
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mingw-w64 zip gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 \
+            mingw-w64-tools git make libtool cmake yasm nasm patch dpkg-dev
+
+      - name: Clone Codeberg repo
+        run: git clone https://codeberg.org/fsphil/hacktv.git
+
+      - name: Build & package
+        run: ./build_and_package_x64.sh hacktv hacktv/src/dist
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: fsphil-x64
+          path: hacktv/src/dist/**
+
+  arm64:
+    needs: check
+    if: needs.check.outputs.needed == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout automation repo
+        uses: actions/checkout@v5
+
+      - name: Cache APT packages
+        uses: actions/cache@v6
+        with:
+          path: /var/cache/apt/archives
+          key: apt-${{ runner.os }}
+          restore-keys: |
+            apt-${{ runner.os }}
 
       - name: Install build dependencies
         run: |
@@ -41,40 +116,29 @@ jobs:
       - name: Clone Codeberg repo
         run: git clone https://codeberg.org/fsphil/hacktv.git
 
-      - name: Get latest commit SHA
-        id: get-sha
-        run: |
-          CID=$(git -C hacktv rev-parse HEAD)
-          echo "cid=$CID" >> $GITHUB_OUTPUT
-
-      - name: Check if build is needed
-        id: check
-        run: |
-          if [ -f .last_built_sha ] && [ "$(cat .last_built_sha)" = "${{ steps.get-sha.outputs.cid }}" ]; then
-              echo "No new commit — skipping build."
-              echo "needed=false" >> "$GITHUB_OUTPUT"
-          else
-              echo "needed=true" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Build & package
-        if: steps.check.outputs.needed == 'true'
-        run: ./build_and_package.sh hacktv hacktv/src/dist
+        run: ./build_and_package_arm64.sh hacktv hacktv/src/dist
 
       - name: Upload artifact
-        if: steps.check.outputs.needed == 'true'
         uses: actions/upload-artifact@v7
         with:
-          name: fsphil
+          name: fsphil-arm64
           path: hacktv/src/dist/**
 
-      - name: Save latest commit SHA
-        if: steps.check.outputs.needed == 'true'
-        run: echo "${{ steps.get-sha.outputs.cid }}" > .last_built_sha
+ save-sha:
+   needs: [check, x64, arm64]
+   if: needs.check.outputs.needed == 'true'
+   runs-on: ubuntu-latest
 
-      - name: Cache latest commit SHA
-        if: steps.check.outputs.needed == 'true'
-        uses: actions/cache@v6
-        with:
-          path: .last_built_sha
-          key: hacktv-fsphil-sha
+   steps:
+     - name: Checkout automation repo
+       uses: actions/checkout@v5
+
+     - name: Save latest commit SHA
+       run: echo "${{ needs.check.outputs.sha }}" > .last_built_sha
+
+     - name: Cache latest commit SHA
+       uses: actions/cache/save@v6
+       with:
+         path: .last_built_sha
+         key: hacktv-fsphil-sha
