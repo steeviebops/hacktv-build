@@ -17,7 +17,7 @@ mkdir -p "$OUTPUT_DIR"
 cd "$REPO_DIR/src"
 
 # Run cross build
-./build_win64.sh
+../../build_win64_arm64.sh
 
 # Confirm binary exists
 if [[ ! -f ./hacktv.exe ]]; then
