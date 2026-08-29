@@ -17,11 +17,7 @@ fi
 cd "$REPO_DIR/src"
 
 # Run cross build
-if [["$REPO_DIR" ~= fsphil ]]; then
-    ../../build_win64.sh
-else
-    ./build_win64.sh
-fi
+./build_win64.sh
 
 # Confirm binary exists
 if [[ ! -f ./hacktv.exe ]]; then
