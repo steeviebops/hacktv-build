@@ -24,10 +24,6 @@ jobs:
 
       - name: Clone Codeberg repo
         run: git clone https://codeberg.org/fsphil/hacktv.git
-      
-      - name: Checkout target commit
-        working-directory: hacktv
-        run: git checkout "${{ needs.check.outputs.sha }}"
 
       - name: Get latest commit SHA
         id: get-sha
