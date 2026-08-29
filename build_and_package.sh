@@ -4,15 +4,15 @@ set -e
 REPO_DIR=$1
 OUTPUT_DIR=$2
 
-# Always create dist relative to repo root
-OUTPUT_DIR="$(pwd)/$OUTPUT_DIR"
-rm -rf "$OUTPUT_DIR"
-mkdir -p "$OUTPUT_DIR"
-
 if [[ -z "$REPO_DIR" || -z "$OUTPUT_DIR" ]]; then
     echo "Usage: $0 <repo_dir> <output_dir>"
     exit 1
 fi
+
+# Always create dist relative to repo root
+OUTPUT_DIR="$(pwd)/$OUTPUT_DIR"
+rm -rf "$OUTPUT_DIR"
+mkdir -p "$OUTPUT_DIR"
 
 cd "$REPO_DIR/src"
 
