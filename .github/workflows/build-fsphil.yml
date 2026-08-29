@@ -24,6 +24,10 @@ jobs:
 
       - name: Clone Codeberg repo
         run: git clone https://codeberg.org/fsphil/hacktv.git
+      
+      - name: Checkout target commit
+        working-directory: hacktv
+        run: git checkout "${{ needs.check.outputs.sha }}"
 
       - name: Get latest commit SHA
         id: get-sha
@@ -125,20 +129,20 @@ jobs:
           name: fsphil-arm64
           path: hacktv/src/dist/**
 
- save-sha:
-   needs: [check, x64, arm64]
-   if: needs.check.outputs.needed == 'true'
-   runs-on: ubuntu-latest
+  save-sha:
+    needs: [check, x64, arm64]
+    if: needs.check.outputs.needed == 'true'
+    runs-on: ubuntu-latest
 
-   steps:
-     - name: Checkout automation repo
-       uses: actions/checkout@v5
+    steps:
+      - name: Checkout automation repo
+        uses: actions/checkout@v5
 
-     - name: Save latest commit SHA
-       run: echo "${{ needs.check.outputs.sha }}" > .last_built_sha
+      - name: Save latest commit SHA
+        run: echo "${{ needs.check.outputs.sha }}" > .last_built_sha
 
-     - name: Cache latest commit SHA
-       uses: actions/cache/save@v6
-       with:
-         path: .last_built_sha
-         key: hacktv-fsphil-sha
+      - name: Cache latest commit SHA
+        uses: actions/cache/save@v6
+        with:
+          path: .last_built_sha
+          key: hacktv-fsphil-sha
