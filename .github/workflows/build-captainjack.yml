@@ -2,7 +2,7 @@ name: Build Captain Jack hacktv (GitHub)
 
 on:
   schedule:
-    - cron: "20 */2 * * *"
+    - cron: "36 */2 * * *"
   workflow_dispatch:
 
 env:
