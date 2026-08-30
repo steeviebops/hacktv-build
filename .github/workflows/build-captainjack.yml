@@ -14,6 +14,8 @@ jobs:
     outputs:
       needed: ${{ steps.check.outputs.needed }}
       sha: ${{ steps.get-sha.outputs.cid }}
+      desc: ${{ steps.get-sha.outputs.desc }}
+      short_sha: ${{ steps.get-sha.outputs.short_cid }}
 
     steps:
       - name: Checkout automation repo
@@ -28,11 +30,16 @@ jobs:
       - name: Clone GitHub repo
         run: git clone https://github.com/captainjack64/hacktv.git
 
-      - name: Get latest commit SHA
+      - name: Get latest commit information
         id: get-sha
         run: |
           CID=$(git -C hacktv rev-parse HEAD)
+          SHORT_CID=$(git -C hacktv rev-parse --short HEAD)
+          DESC=$(git -C hacktv log -1 --pretty=format:"%s")
+      
           echo "cid=$CID" >> "$GITHUB_OUTPUT"
+          echo "short_cid=$SHORT_CID" >> "$GITHUB_OUTPUT"
+          echo "desc=$DESC" >> "$GITHUB_OUTPUT"
 
       - name: Check if build is needed
         id: check
@@ -218,5 +225,5 @@ jobs:
             exit 0
           fi
 
-          git commit -m "Update hacktv builds"
+          git commit -m "${{ needs.check.outputs.short_sha }} (${{ needs.check.outputs.desc }})"
           git push
