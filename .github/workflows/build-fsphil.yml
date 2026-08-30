@@ -5,6 +5,9 @@ on:
     - cron: "0 */2 * * *"
   workflow_dispatch:
 
+env:
+  ZIP_NAME: fsphil.zip
+
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -60,14 +63,34 @@ jobs:
       - name: Clone Codeberg repo
         run: git clone https://codeberg.org/fsphil/hacktv.git
 
-      - name: Build & package
-        run: ./build_and_package_x64.sh hacktv hacktv/src/dist
+      - name: Build hacktv
+        working-directory: hacktv/src
+        run: ./build_win64.sh
+      
+      - name: Create package
+        working-directory: hacktv/src
+        run: |
+          mkdir -p dist/zip
+      
+          DESC=$(git show HEAD --pretty=format:"%s" --no-patch)
+          CID=$(git show HEAD --pretty=format:"%h" --no-patch)
+          echo "$CID ($DESC)" > dist/zip/readme.txt
+      
+          cp hacktv.exe dist/zip/
+      
+          if [ -d ../testsignals ]; then
+            mkdir -p dist/zip/testsignals
+            cp ../testsignals/*.bin dist/zip/testsignals/
+          fi
+      
+          cd dist/zip
+          zip -r "../${{ env.ZIP_NAME }}" .
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
           name: fsphil-x64
-          path: hacktv/src/dist/**
+          path: hacktv/src/dist/${{ env.ZIP_NAME }}
 
   arm64:
     needs: check
@@ -100,17 +123,37 @@ jobs:
       - name: Clone Codeberg repo
         run: git clone https://codeberg.org/fsphil/hacktv.git
 
-      - name: Build & package
-        run: ./build_and_package_arm64.sh hacktv hacktv/src/dist
+      - name: Build hacktv
+        working-directory: hacktv/src
+        run: ../../build_win64_arm64.sh
+              
+      - name: Create package
+        working-directory: hacktv/src
+        run: |
+          mkdir -p dist/zip
+      
+          DESC=$(git show HEAD --pretty=format:"%s" --no-patch)
+          CID=$(git show HEAD --pretty=format:"%h" --no-patch)
+          echo "$CID ($DESC)" > dist/zip/readme.txt
+      
+          cp hacktv.exe dist/zip/
+      
+          if [ -d ../testsignals ]; then
+            mkdir -p dist/zip/testsignals
+            cp ../testsignals/*.bin dist/zip/testsignals/
+          fi
+      
+          cd dist/zip
+          zip -r "../${{ env.ZIP_NAME }}" .
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
           name: fsphil-arm64
-          path: hacktv/src/dist/**
+          path: hacktv/src/dist/${{ env.ZIP_NAME }}
 
   save-sha:
-    needs: [check, x64, arm64]
+    needs: [check, x64, arm64, deploy]
     if: needs.check.outputs.needed == 'true'
     runs-on: ubuntu-latest
 
@@ -126,3 +169,54 @@ jobs:
         with:
           path: .last_built_sha
           key: hacktv-fsphil-sha
+
+  deploy:
+    needs: [check, x64, arm64]
+    if: needs.check.outputs.needed == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download x64 artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: fsphil-x64
+          path: x64
+
+      - name: Download ARM64 artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: fsphil-arm64
+          path: arm64
+
+      - name: Check out download repository
+        uses: actions/checkout@v5
+        with:
+          repository: steeviebops/download.bops.ie
+          token: ${{ secrets.DOWNLOAD_REPO_TOKEN }}
+          path: download-repo
+
+      - name: Update download files
+        run: |
+          mkdir -p download-repo/hacktv/arm64
+
+          cp "x64/${{ env.ZIP_NAME }}" \
+          "download-repo/hacktv/${{ env.ZIP_NAME }}"
+
+          cp "arm64/${{ env.ZIP_NAME }}" \
+          "download-repo/hacktv/arm64/${{ env.ZIP_NAME }}"
+
+      - name: Commit updated download files
+        working-directory: download-repo
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add hacktv/
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+
+          git commit -m "Update hacktv builds"
+          git push
