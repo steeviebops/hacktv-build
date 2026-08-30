@@ -89,7 +89,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
-          name: mattstvbarn-x64
+          name: captainjack-x64
           path: hacktv/src/dist/${{ env.ZIP_NAME }}
 
   arm64:
@@ -149,7 +149,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
-          name: mattstvbarn-arm64
+          name: captainjack-arm64
           path: hacktv/src/dist/${{ env.ZIP_NAME }}
 
   save-sha:
@@ -179,13 +179,13 @@ jobs:
       - name: Download x64 artifact
         uses: actions/download-artifact@v8
         with:
-          name: mattstvbarn-x64
+          name: captainjack-x64
           path: x64
 
       - name: Download ARM64 artifact
         uses: actions/download-artifact@v8
         with:
-          name: mattstvbarn-arm64
+          name: captainjack-arm64
           path: arm64
 
       - name: Check out download repository
