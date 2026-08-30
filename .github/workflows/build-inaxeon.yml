@@ -1,27 +1,222 @@
-name: Build inaxeon HackTV (GitHub)
+name: Build inaxeon hacktv (GitHub)
 
 on:
-  push:
-    branches: [ master, main ]
+  schedule:
+    - cron: "0 */2 * * *"
   workflow_dispatch:
 
+env:
+  ZIP_NAME: mattstvbarn.zip
+
 jobs:
-  build:
+  check:
     runs-on: ubuntu-latest
+    outputs:
+      needed: ${{ steps.check.outputs.needed }}
+      sha: ${{ steps.get-sha.outputs.cid }}
+
     steps:
-      - name: Install build dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y zip gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 mingw-w64-tools git make libtool cmake yasm nasm patch dpkg-dev
+      - name: Checkout automation repo
+        uses: actions/checkout@v5
+
+      - name: Restore last built commit SHA
+        uses: actions/cache/restore@v6
+        with:
+          path: .last_built_sha
+          key: hacktv-inaxeon-sha
 
       - name: Clone GitHub repo
         run: git clone https://github.com/inaxeon/hacktv.git
 
-      - name: Build & package
-        run: ./build_and_package.sh hacktv dist
+      - name: Get latest commit SHA
+        id: get-sha
+        run: |
+          CID=$(git -C hacktv rev-parse HEAD)
+          echo "cid=$CID" >> "$GITHUB_OUTPUT"
+
+      - name: Check if build is needed
+        id: check
+        run: |
+          if [ -f .last_built_sha ] && [ "$(cat .last_built_sha)" = "${{ steps.get-sha.outputs.cid }}" ]; then
+            echo "No new commit — skipping build."
+            echo "needed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "New commit detected."
+            echo "needed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  x64:
+    needs: check
+    if: needs.check.outputs.needed == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout automation repo
+        uses: actions/checkout@v5
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mingw-w64 zip gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 \
+            mingw-w64-tools git make libtool cmake yasm nasm patch dpkg-dev
+
+      - name: Clone GitHub repo
+        run: git clone --recurse-submodules https://github.com/inaxeon/hacktv.git
+
+      - name: Build hacktv
+        working-directory: hacktv/src
+        run: ./build_win64.sh
+      
+      - name: Create package
+        working-directory: hacktv/src
+        run: |
+          mkdir -p dist/zip
+      
+          DESC=$(git show HEAD --pretty=format:"%s" --no-patch)
+          CID=$(git show HEAD --pretty=format:"%h" --no-patch)
+          echo "$CID ($DESC)" > dist/zip/readme.txt
+      
+          cp hacktv.exe dist/zip/
+      
+          if [ -d ../testsignals ]; then
+            mkdir -p dist/zip/testsignals
+            cp ../testsignals/*.bin dist/zip/testsignals/
+          fi
+      
+          cd dist/zip
+          zip -r "../${{ env.ZIP_NAME }}" .
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
-          name: hacktv-inaxeon
-          path: dist/*.zip
+          name: mattstvbarn-x64
+          path: hacktv/src/dist/${{ env.ZIP_NAME }}
+
+  arm64:
+    needs: check
+    if: needs.check.outputs.needed == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout automation repo
+        uses: actions/checkout@v5
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mingw-w64 zip gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 \
+            mingw-w64-tools git make libtool cmake yasm nasm patch dpkg-dev
+
+      - name: Install LLVM MinGW
+        run: |
+          wget https://github.com/mstorsjo/llvm-mingw/releases/download/20260224/llvm-mingw-20260224-ucrt-ubuntu-22.04-x86_64.tar.xz
+          sudo mkdir -p /opt/llvm-mingw
+          sudo tar -xJf llvm-mingw-20260224-ucrt-ubuntu-22.04-x86_64.tar.xz \
+            --strip-components=1 -C /opt/llvm-mingw
+          echo "/opt/llvm-mingw/bin" >> "$GITHUB_PATH"
+
+      - name: Verify LLVM MinGW
+        run: |
+          aarch64-w64-mingw32-gcc --version
+          aarch64-w64-mingw32-strip --version
+
+      - name: Clone GitHub repo
+        run: git clone --recurse-submodules https://github.com/inaxeon/hacktv.git
+
+      - name: Build hacktv
+        working-directory: hacktv/src
+        run: ../../build_win64_arm64.sh
+              
+      - name: Create package
+        working-directory: hacktv/src
+        run: |
+          mkdir -p dist/zip
+      
+          DESC=$(git show HEAD --pretty=format:"%s" --no-patch)
+          CID=$(git show HEAD --pretty=format:"%h" --no-patch)
+          echo "$CID ($DESC)" > dist/zip/readme.txt
+      
+          cp hacktv.exe dist/zip/
+      
+          if [ -d ../testsignals ]; then
+            mkdir -p dist/zip/testsignals
+            cp ../testsignals/*.bin dist/zip/testsignals/
+          fi
+      
+          cd dist/zip
+          zip -r "../${{ env.ZIP_NAME }}" .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: mattstvbarn-arm64
+          path: hacktv/src/dist/${{ env.ZIP_NAME }}
+
+  save-sha:
+    needs: [check, x64, arm64, deploy]
+    if: needs.check.outputs.needed == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout automation repo
+        uses: actions/checkout@v5
+
+      - name: Save latest commit SHA
+        run: echo "${{ needs.check.outputs.sha }}" > .last_built_sha
+
+      - name: Cache latest commit SHA
+        uses: actions/cache/save@v6
+        with:
+          path: .last_built_sha
+          key: hacktv-inaxeon-sha
+
+  deploy:
+    needs: [check, x64, arm64]
+    if: needs.check.outputs.needed == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download x64 artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: mattstvbarn-x64
+          path: x64
+
+      - name: Download ARM64 artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: mattstvbarn-arm64
+          path: arm64
+
+      - name: Check out download repository
+        uses: actions/checkout@v5
+        with:
+          repository: steeviebops/download.bops.ie
+          token: ${{ secrets.DOWNLOAD_REPO_TOKEN }}
+          path: download-repo
+
+      - name: Update download files
+        run: |
+          mkdir -p download-repo/hacktv/arm64
+
+          cp "x64/${{ env.ZIP_NAME }}" \
+          "download-repo/hacktv/${{ env.ZIP_NAME }}"
+
+          cp "arm64/${{ env.ZIP_NAME }}" \
+          "download-repo/hacktv/arm64/${{ env.ZIP_NAME }}"
+
+      - name: Commit updated download files
+        working-directory: download-repo
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add hacktv/
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+
+          git commit -m "Update hacktv builds"
+          git push
