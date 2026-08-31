@@ -1,8 +1,6 @@
 name: Build inaxeon hacktv (GitHub)
 
 on:
-  schedule:
-    - cron: "9 * * * *"
   workflow_dispatch:
 
 env:
