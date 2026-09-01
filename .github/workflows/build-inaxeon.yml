@@ -3,6 +3,10 @@ name: Build inaxeon hacktv (GitHub)
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+  actions: write
+
 env:
   ZIP_NAME: mattstvbarn.zip
 
@@ -168,7 +172,15 @@ jobs:
 
       - name: Save latest commit SHA
         run: echo "${{ needs.check.outputs.sha }}" > .last_built_sha
-
+      
+      - name: Delete previous SHA cache
+        continue-on-error: true
+        run: |
+          gh extension install actions/gh-actions-cache
+          gh actions-cache delete "hacktv-inaxeon-sha" --confirm
+        env:
+          GH_TOKEN: ${{ github.token }}
+      
       - name: Cache latest commit SHA
         uses: actions/cache/save@v6
         with:
