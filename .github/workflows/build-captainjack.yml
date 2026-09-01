@@ -3,6 +3,10 @@ name: Build Captain Jack hacktv (GitHub)
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+  actions: write
+
 env:
   ZIP_NAME: captainjack.zip
 
@@ -181,7 +185,7 @@ jobs:
         uses: actions/cache/save@v6
         with:
           path: .last_built_sha
-          key: hacktv-fsphil-sha
+          key: hacktv-captainjack-sha
 
   deploy:
     needs: [check, x64, arm64]
