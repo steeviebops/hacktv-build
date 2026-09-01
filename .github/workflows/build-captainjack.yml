@@ -70,7 +70,7 @@ jobs:
 
       - name: Build hacktv
         working-directory: hacktv/src
-        run: ../../build_win64_cj.sh
+        run: ./build_win64_cj.sh
       
       - name: Create package
         working-directory: hacktv/src
