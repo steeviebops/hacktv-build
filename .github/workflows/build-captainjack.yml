@@ -168,12 +168,20 @@ jobs:
 
       - name: Save latest commit SHA
         run: echo "${{ needs.check.outputs.sha }}" > .last_built_sha
-
+      
+      - name: Delete previous SHA cache
+        continue-on-error: true
+        run: |
+          gh extension install actions/gh-actions-cache
+          gh actions-cache delete "hacktv-captainjack-sha" --confirm
+        env:
+          GH_TOKEN: ${{ github.token }}
+      
       - name: Cache latest commit SHA
         uses: actions/cache/save@v6
         with:
           path: .last_built_sha
-          key: hacktv-captainjack-sha
+          key: hacktv-fsphil-sha
 
   deploy:
     needs: [check, x64, arm64]
