@@ -12,7 +12,7 @@ env:
 
 jobs:
   check:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       needed: ${{ steps.check.outputs.needed }}
       sha: ${{ steps.get-sha.outputs.cid }}
