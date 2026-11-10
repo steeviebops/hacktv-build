@@ -57,7 +57,7 @@ jobs:
   x64:
     needs: check
     if: needs.check.outputs.needed == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout automation repo
@@ -104,7 +104,7 @@ jobs:
   arm64:
     needs: check
     if: needs.check.outputs.needed == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout automation repo
@@ -164,7 +164,7 @@ jobs:
   save-sha:
     needs: [check, x64, arm64, deploy]
     if: needs.check.outputs.needed == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout automation repo
@@ -190,7 +190,7 @@ jobs:
   deploy:
     needs: [check, x64, arm64]
     if: needs.check.outputs.needed == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Download x64 artifact
